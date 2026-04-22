@@ -6,7 +6,7 @@ interface CodeEditorProps {
   onChange: (v: string) => void;
   language: string;
   errorLine?: number | null;
-  onSelectionChange?: (selected: string) => void;
+  onSelectionChange?: (selected: string, startLine: number) => void;
 }
 
 const languageMap: Record<string, string> = {
@@ -59,7 +59,8 @@ export function CodeEditor({
       const sel = editor.getSelection();
       const model = editor.getModel();
       if (sel && model && onSelectionChange) {
-        onSelectionChange(model.getValueInRange(sel));
+        const text = model.getValueInRange(sel);
+        onSelectionChange(text, sel.startLineNumber);
       }
     });
   };
