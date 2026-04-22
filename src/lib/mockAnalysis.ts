@@ -1,4 +1,5 @@
 export type AnalysisResult = {
+  hasError: boolean;
   error: string;
   line: number;
   snippet: string;
@@ -13,25 +14,6 @@ export type AnalysisResult = {
     thumbnail: string;
     url: string;
   };
-};
-
-export const mockAnalysis: AnalysisResult = {
-  error: "NameError",
-  line: 5,
-  snippet: "print(username)",
-  concept: "Variable not defined",
-  conceptDetail:
-    "A variable was used before it was given a value. Python looks up the name and can't find it.",
-  explanation:
-    "You are trying to use a variable 'username' that has not been declared anywhere above. Python cannot find it in memory, so it raises a NameError. Define the variable before you use it.",
-  fix: "username = 'YourName'\nprint(username)",
-  video: {
-    title: "Python NameError - Variable Not Defined Explained",
-    channel: "Programming with Mosh",
-    duration: "8:24",
-    thumbnail: "https://img.youtube.com/vi/TqPzwenhMj0/0.jpg",
-    url: "https://youtube.com/watch?v=TqPzwenhMj0",
-  },
 };
 
 export const defaultCode: Record<string, string> = {
