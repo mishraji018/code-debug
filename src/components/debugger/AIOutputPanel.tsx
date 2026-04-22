@@ -8,6 +8,7 @@ import {
   Check,
   Bot,
   Play,
+  CheckCircle2,
 } from "lucide-react";
 import { useState } from "react";
 import type { AnalysisResult } from "@/lib/mockAnalysis";
@@ -98,12 +99,17 @@ function SkeletonState() {
 }
 
 function ResultsState({ result }: { result: AnalysisResult }) {
-  const cards = [
-    <ErrorCard key="err" result={result} />,
-    <ConceptCard key="con" result={result} />,
-    <AIExplanationCard key="ai" result={result} />,
-    <VideoCard key="vid" result={result} />,
-  ];
+  const cards = result.hasError
+    ? [
+        <ErrorCard key="err" result={result} />,
+        <ConceptCard key="con" result={result} />,
+        <AIExplanationCard key="ai" result={result} />,
+        <VideoCard key="vid" result={result} />,
+      ]
+    : [
+        <SuccessCard key="ok" />,
+        <VideoCard key="vid" result={result} />,
+      ];
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -122,6 +128,25 @@ function ResultsState({ result }: { result: AnalysisResult }) {
         </motion.div>
       ))}
     </motion.div>
+  );
+}
+
+function SuccessCard() {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-success/30 bg-success/5 p-4 shadow-[0_0_30px_color-mix(in_oklab,var(--success)_18%,transparent)] backdrop-blur-md">
+      <div className="absolute inset-y-0 left-0 w-[3px] bg-success shadow-[0_0_12px_var(--success)]" />
+      <div className="flex items-start gap-3 pl-2">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-success/20">
+          <CheckCircle2 className="h-5 w-5 text-success" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-success">No errors found!</h3>
+          <p className="mt-1 text-sm text-foreground/90">
+            Your code looks good. The AI couldn't spot any obvious bugs in this snippet.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
