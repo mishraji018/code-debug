@@ -139,7 +139,7 @@ export function DebuggerApp() {
               value={code}
               onChange={setCode}
               language={language}
-              errorLine={result?.line ?? null}
+              errorLine={result?.hasError ? result.line : null}
               onSelectionChange={handleSelectionChange}
             />
             <FloatingActions
