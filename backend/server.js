@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors({
-  origin: "https://code-debug-fawn.vercel.app",
+  origin: "*",
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
