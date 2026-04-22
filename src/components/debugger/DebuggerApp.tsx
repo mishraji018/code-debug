@@ -1,11 +1,13 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { TopNavbar } from "@/components/debugger/TopNavbar";
 import { CodeEditor } from "@/components/debugger/CodeEditor";
 import { FloatingActions } from "@/components/debugger/FloatingActions";
 import { AIOutputPanel } from "@/components/debugger/AIOutputPanel";
 import { Code2, Bot } from "lucide-react";
-import { defaultCode, mockAnalysis, type AnalysisResult } from "@/lib/mockAnalysis";
+import { defaultCode, type AnalysisResult } from "@/lib/mockAnalysis";
+import { analyzeCode } from "@/utils/analyze.functions";
 
 export function DebuggerApp() {
   const [language, setLanguage] = useState<string>("python");
@@ -15,6 +17,7 @@ export function DebuggerApp() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [mobileTab, setMobileTab] = useState<"editor" | "results">("editor");
+  const analyzeCodeFn = useServerFn(analyzeCode);
 
   const handleLangChange = (l: string) => {
     setLanguage(l);
@@ -28,39 +31,62 @@ export function DebuggerApp() {
   }, []);
 
   const runAnalysis = useCallback(
-    (mode: "full" | "selected") => {
+    async (mode: "full" | "selected") => {
       if (mode === "selected" && !selectedText.trim()) {
         toast.warning("⚠️ Please select some code first!");
         return;
       }
 
-      // Snippet to analyze + line offset
       const snippet = mode === "full" ? code : selectedText;
-      const lineOffset = mode === "full" ? 0 : selectionStartLine;
-
-      // For the demo we still use the mock response, but we adjust the
-      // reported line number based on the offset so the error highlights
-      // the correct line in the editor.
-      // actual line = selectionStartLine + errorLineInSnippet - 1
-      const errorLineInSnippet = mockAnalysis.line;
-      const adjustedLine =
-        mode === "full"
-          ? errorLineInSnippet
-          : Math.max(1, lineOffset + errorLineInSnippet - 1);
+      if (!snippet.trim()) {
+        toast.warning("⚠️ Editor is empty — write some code first!");
+        return;
+      }
+      const lineOffset = mode === "full" ? 1 : selectionStartLine;
 
       setLoading(true);
       setResult(null);
       setMobileTab("results");
 
-      // (snippet would be sent to the AI here)
-      void snippet;
+      try {
+        const response = await analyzeCodeFn({
+          data: { code: snippet, language, lineOffset },
+        });
 
-      setTimeout(() => {
-        setResult({ ...mockAnalysis, line: adjustedLine });
+        if (!response.ok) {
+          toast.error(response.error);
+          setLoading(false);
+          return;
+        }
+
+        const r = response.result;
+        setResult({
+          hasError: r.hasError,
+          error: r.errorType,
+          line: r.errorLine,
+          snippet: r.errorCode,
+          concept: r.concept,
+          conceptDetail: r.conceptExplanation,
+          explanation: r.aiExplanation,
+          fix: r.fix,
+          video: {
+            title: r.hasError
+              ? `${r.errorType} — ${r.concept}`
+              : "Clean Code Best Practices",
+            channel: "YouTube Search",
+            duration: "",
+            thumbnail: "",
+            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(r.videoSearchQuery)}`,
+          },
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Something went wrong analyzing your code.");
+      } finally {
         setLoading(false);
-      }, 2000);
+      }
     },
-    [code, selectedText, selectionStartLine],
+    [analyzeCodeFn, code, language, selectedText, selectionStartLine],
   );
 
   const handleClear = () => {
