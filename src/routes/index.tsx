@@ -1,26 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { DebuggerApp } from "@/components/debugger/DebuggerApp";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "DebugAI — AI-Powered Code Debugger" },
+      {
+        name: "description",
+        content:
+          "A next-gen AI code debugger. Paste your code, click analyze, and get plain-English error explanations with one-click fixes.",
+      },
+      { property: "og:title", content: "DebugAI — AI-Powered Code Debugger" },
+      {
+        property: "og:description",
+        content:
+          "Find bugs, understand errors, and learn faster with an AI debugger that explains in plain English.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
 function Index() {
-  return <PlaceholderIndex />;
+  return <DebuggerApp />;
 }
