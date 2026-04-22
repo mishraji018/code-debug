@@ -252,23 +252,27 @@ function VideoCard({ result }: { result: AnalysisResult }) {
         <h3 className="font-semibold">Recommended Video</h3>
       </div>
       <div className="overflow-hidden rounded-lg border border-white/10">
-        <div className="relative aspect-video bg-black/40">
-          <img
-            src={result.video.thumbnail}
-            alt={result.video.title}
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
+        <div className="relative aspect-video bg-gradient-to-br from-primary/20 via-ai/15 to-black/40">
+          {result.video.thumbnail ? (
+            <img
+              src={result.video.thumbnail}
+              alt={result.video.title}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : null}
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-2xl">
               <Play className="ml-0.5 h-5 w-5 fill-black text-black" />
             </div>
           </div>
-          <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 font-mono text-[10px] text-white">
-            {result.video.duration}
-          </span>
+          {result.video.duration ? (
+            <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 font-mono text-[10px] text-white">
+              {result.video.duration}
+            </span>
+          ) : null}
         </div>
         <div className="space-y-2 p-3">
           <h4 className="line-clamp-2 text-sm font-semibold leading-snug">
