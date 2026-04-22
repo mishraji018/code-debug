@@ -1,4 +1,4 @@
-import { Brain, Plus, Moon, ChevronDown } from "lucide-react";
+import { Terminal, Plus, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { languages } from "@/lib/mockAnalysis";
 
@@ -28,14 +28,19 @@ export function TopNavbar({ language, onLanguageChange, onNewFile }: TopNavbarPr
         <div className="relative">
           <div className="absolute inset-0 rounded-xl bg-ai/40 blur-xl" />
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-ai shadow-[0_0_20px_color-mix(in_oklab,var(--ai)_50%,transparent)]">
-            <Brain className="h-5 w-5 text-white" />
+            <Terminal className="h-5 w-5 text-white" />
           </div>
         </div>
         <div>
-          <h1 className="font-sans text-lg font-bold tracking-tight">
-            Debug<span className="shimmer-text">AI</span>
-          </h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <h1 className="font-sans text-lg font-bold tracking-tight sm:text-xl">
+              Debug<span className="shimmer-text">AI</span>
+            </h1>
+            <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/20 px-3 py-1 text-[11px] font-extrabold tracking-wider text-primary shadow-[0_0_15px_color-mix(in_oklab,var(--primary)_35%,transparent)] sm:text-xs">
+              ✨ Made by Mishra_ji
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Code Debugger
           </p>
         </div>
@@ -78,23 +83,13 @@ export function TopNavbar({ language, onLanguageChange, onNewFile }: TopNavbarPr
       {/* Right side */}
       <div className="flex items-center gap-2">
         <button
-          className="glass flex h-9 w-9 items-center justify-center rounded-full transition-all hover:border-primary/40 hover:bg-white/8"
-          aria-label="Toggle theme"
-          title="Toggle theme"
-        >
-          <Moon className="h-4 w-4" />
-        </button>
-        <button
           onClick={onNewFile}
-          className="glass flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-all hover:border-primary/50 hover:bg-white/8"
+          className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all hover:border-primary/50 hover:bg-white/8"
           title="Start a new file"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New File</span>
         </button>
-        <div className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-ai text-xs font-bold ring-2 ring-white/10">
-          YA
-        </div>
       </div>
     </header>
   );

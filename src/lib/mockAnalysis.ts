@@ -1,5 +1,17 @@
+export type ErrorItem = {
+  type: string;
+  line: number;
+  code: string;
+  severity: 'high' | 'medium' | 'low';
+  message: string;
+  rootCause: string;
+  explanation: string;
+  fix: string;
+};
+
 export type AnalysisResult = {
   hasError: boolean;
+  // Legacy single-error fields (kept for backward compat)
   error: string;
   line: number;
   snippet: string;
@@ -7,6 +19,11 @@ export type AnalysisResult = {
   conceptDetail: string;
   explanation: string;
   fix: string;
+  codeExplanation?: {
+    summary: string;
+    breakdown: { line: string; explains: string }[];
+    tip: string;
+  };
   video: {
     title: string;
     channel: string;
@@ -14,6 +31,14 @@ export type AnalysisResult = {
     thumbnail: string;
     url: string;
   };
+  // New enhanced fields
+  errors?: ErrorItem[];
+  correctedCode?: string;
+  diff?: string[];
+  improvements?: string[];
+  lineExplanation?: string[];
+  suggestions?: { type: string; message: string }[];
+  modeOutput?: { summary: string; detail: string } | null;
 };
 
 export const defaultCode: Record<string, string> = {

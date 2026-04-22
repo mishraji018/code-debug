@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
+
 import { TopNavbar } from "@/components/debugger/TopNavbar";
-import { CodeEditor } from "@/components/debugger/CodeEditor";
+import { CodeEditor, type CodeEditorHandle } from "@/components/debugger/CodeEditor";
 import { FloatingActions } from "@/components/debugger/FloatingActions";
 import { AIOutputPanel } from "@/components/debugger/AIOutputPanel";
 import { Code2, Bot } from "lucide-react";
@@ -17,7 +17,9 @@ export function DebuggerApp() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [mobileTab, setMobileTab] = useState<"editor" | "results">("editor");
-  const analyzeCodeFn = useServerFn(analyzeCode);
+
+  // Ref to CodeEditor for scrollToLine
+  const editorRef = useRef<CodeEditorHandle>(null);
 
   const handleLangChange = (l: string) => {
     setLanguage(l);
@@ -28,6 +30,12 @@ export function DebuggerApp() {
   const handleSelectionChange = useCallback((text: string, startLine: number) => {
     setSelectedText(text);
     setSelectionStartLine(startLine);
+  }, []);
+
+  // Scroll editor to a specific line (used from output panel)
+  const scrollToLine = useCallback((line: number) => {
+    editorRef.current?.scrollToLine(line);
+    setMobileTab("editor");
   }, []);
 
   const runAnalysis = useCallback(
@@ -49,7 +57,7 @@ export function DebuggerApp() {
       setMobileTab("results");
 
       try {
-        const response = await analyzeCodeFn({
+        const response = await analyzeCode({
           data: { code: snippet, language, lineOffset },
         });
 
@@ -60,6 +68,16 @@ export function DebuggerApp() {
         }
 
         const r = response.result;
+
+        // Warn if first error line is blank
+        if (r.hasError && r.errorLine > 0) {
+          const lines = code.split('\n');
+          const lineIdx = r.errorLine - 1;
+          if (lines[lineIdx] !== undefined && lines[lineIdx].trim() === "") {
+            toast.warning(`Line detection issue — check line ${r.errorLine}`);
+          }
+        }
+
         setResult({
           hasError: r.hasError,
           error: r.errorType,
@@ -69,6 +87,15 @@ export function DebuggerApp() {
           conceptDetail: r.conceptExplanation,
           explanation: r.aiExplanation,
           fix: r.fix,
+          codeExplanation: r.codeExplanation,
+          // Enhanced fields
+          errors: r.errors,
+          correctedCode: r.correctedCode,
+          diff: r.diff,
+          improvements: r.improvements,
+          lineExplanation: r.lineExplanation,
+          suggestions: r.suggestions,
+          modeOutput: r.modeOutput,
           video: {
             title: r.hasError
               ? `${r.errorType} — ${r.concept}`
@@ -86,7 +113,7 @@ export function DebuggerApp() {
         setLoading(false);
       }
     },
-    [analyzeCodeFn, code, language, selectedText, selectionStartLine],
+    [code, language, selectedText, selectionStartLine],
   );
 
   const handleClear = () => {
@@ -101,17 +128,28 @@ export function DebuggerApp() {
     setResult(null);
   };
 
+  // Apply Fix: replace editor content with correctedCode from AI
+  const handleApplyFix = useCallback((correctedCode: string) => {
+    setCode(correctedCode);
+    setResult(null);
+    setMobileTab("editor");
+    toast.success("✅ Fix applied! Review the corrected code.");
+  }, []);
+
   const hasSelection = selectedText.trim().length > 0;
 
+  // All error lines for multi-highlight
+  const errorLines = result?.errors?.map((e) => e.line).filter((l) => l > 0) ?? [];
+
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <TopNavbar
         language={language}
         onLanguageChange={handleLangChange}
         onNewFile={handleNewFile}
       />
 
-      {/* Mobile tabs */}
+      {/* Mobile tabs — only visible below md */}
       <div className="flex gap-1 px-3 pt-3 md:hidden">
         {(["editor", "results"] as const).map((t) => (
           <button
@@ -127,19 +165,29 @@ export function DebuggerApp() {
         ))}
       </div>
 
-      <main className="flex flex-1 gap-3 overflow-hidden p-3 md:gap-4 md:p-4">
+      {/* Main grid — 2 columns on desktop, stacked on mobile */}
+      <main
+        className="
+          flex flex-1 gap-3 overflow-hidden p-3
+          md:grid md:gap-4 md:p-4
+          md:[grid-template-columns:2fr_1fr]
+          xl:[grid-template-columns:2.5fr_1fr]
+        "
+      >
         {/* Editor panel */}
         <section
-          className={`relative flex-1 md:basis-3/5 ${
+          className={`relative min-h-0 ${
             mobileTab === "editor" ? "flex" : "hidden"
-          } md:flex`}
+          } md:flex md:h-full md:flex-col`}
         >
           <div className="relative h-full w-full">
             <CodeEditor
+              ref={editorRef}
               value={code}
               onChange={setCode}
               language={language}
               errorLine={result?.hasError ? result.line : null}
+              errorLines={errorLines}
               onSelectionChange={handleSelectionChange}
             />
             <FloatingActions
@@ -154,15 +202,22 @@ export function DebuggerApp() {
 
         {/* Output panel */}
         <section
-          className={`flex-1 md:basis-2/5 ${
-            mobileTab === "results" ? "flex" : "hidden"
-          } md:flex`}
+          className={`min-h-0 overflow-hidden ${
+            mobileTab === "results" ? "flex h-[40vh]" : "hidden"
+          } md:flex md:h-full md:flex-col`}
         >
-          <div className="h-full w-full">
-            <AIOutputPanel loading={loading} result={result} />
+          <div className="h-full w-full overflow-hidden">
+            <AIOutputPanel
+              loading={loading}
+              result={result}
+              onScrollToLine={scrollToLine}
+              onApplyFix={handleApplyFix}
+            />
           </div>
         </section>
       </main>
     </div>
   );
 }
+
+export default DebuggerApp;
