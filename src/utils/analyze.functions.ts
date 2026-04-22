@@ -8,7 +8,7 @@ export async function analyzeCode({ data }: {
   }
 }) {
   try {
-    const response = await fetch('http://localhost:3001/api/analyze', {
+    const response = await fetch('https://code-debug-fdpr.onrender.com/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -32,7 +32,7 @@ export async function analyzeCode({ data }: {
     console.error('analyzeCode error:', err);
     return {
       ok: false as const,
-      error: 'Could not reach the backend server. Is it running on port 3001?',
+      error: 'Could not reach the backend server. Please check your internet connection and try again.',
     };
   }
 }
