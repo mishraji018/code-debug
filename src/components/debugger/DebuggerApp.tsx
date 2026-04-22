@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import { TopNavbar } from "@/components/debugger/TopNavbar";
 import { CodeEditor } from "@/components/debugger/CodeEditor";
 import { FloatingActions } from "@/components/debugger/FloatingActions";
@@ -9,7 +10,8 @@ import { defaultCode, mockAnalysis, type AnalysisResult } from "@/lib/mockAnalys
 export function DebuggerApp() {
   const [language, setLanguage] = useState<string>("python");
   const [code, setCode] = useState<string>(defaultCode.python);
-  const [selection, setSelection] = useState<string>("");
+  const [selectedText, setSelectedText] = useState<string>("");
+  const [selectionStartLine, setSelectionStartLine] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [mobileTab, setMobileTab] = useState<"editor" | "results">("editor");
@@ -20,26 +22,60 @@ export function DebuggerApp() {
     setResult(null);
   };
 
-  const runAnalysis = useCallback(() => {
-    setLoading(true);
-    setResult(null);
-    setMobileTab("results");
-    setTimeout(() => {
-      setResult(mockAnalysis);
-      setLoading(false);
-    }, 2000);
+  const handleSelectionChange = useCallback((text: string, startLine: number) => {
+    setSelectedText(text);
+    setSelectionStartLine(startLine);
   }, []);
+
+  const runAnalysis = useCallback(
+    (mode: "full" | "selected") => {
+      if (mode === "selected" && !selectedText.trim()) {
+        toast.warning("⚠️ Please select some code first!");
+        return;
+      }
+
+      // Snippet to analyze + line offset
+      const snippet = mode === "full" ? code : selectedText;
+      const lineOffset = mode === "full" ? 0 : selectionStartLine;
+
+      // For the demo we still use the mock response, but we adjust the
+      // reported line number based on the offset so the error highlights
+      // the correct line in the editor.
+      // actual line = selectionStartLine + errorLineInSnippet - 1
+      const errorLineInSnippet = mockAnalysis.line;
+      const adjustedLine =
+        mode === "full"
+          ? errorLineInSnippet
+          : Math.max(1, lineOffset + errorLineInSnippet - 1);
+
+      setLoading(true);
+      setResult(null);
+      setMobileTab("results");
+
+      // (snippet would be sent to the AI here)
+      void snippet;
+
+      setTimeout(() => {
+        setResult({ ...mockAnalysis, line: adjustedLine });
+        setLoading(false);
+      }, 2000);
+    },
+    [code, selectedText, selectionStartLine],
+  );
 
   const handleClear = () => {
     setCode("");
     setResult(null);
-    setSelection("");
+    setSelectedText("");
+    setSelectionStartLine(1);
   };
 
   const handleNewFile = () => {
     setCode(defaultCode[language] ?? "");
     setResult(null);
   };
+
+  const hasSelection = selectedText.trim().length > 0;
 
   return (
     <div className="flex h-screen flex-col">
@@ -78,14 +114,14 @@ export function DebuggerApp() {
               onChange={setCode}
               language={language}
               errorLine={result?.line ?? null}
-              onSelectionChange={setSelection}
+              onSelectionChange={handleSelectionChange}
             />
             <FloatingActions
-              onAnalyzeFull={runAnalysis}
-              onAnalyzeSelected={runAnalysis}
+              onAnalyzeFull={() => runAnalysis("full")}
+              onAnalyzeSelected={() => runAnalysis("selected")}
               onClear={handleClear}
               loading={loading}
-              hasSelection={selection.trim().length > 0}
+              hasSelection={hasSelection}
             />
           </div>
         </section>

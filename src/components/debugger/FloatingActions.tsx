@@ -57,16 +57,20 @@ export function FloatingActions({
           <motion.button
             animate={{ y: [0, -4, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={hasSelection && !loading ? { scale: 1.05 } : undefined}
+            whileTap={hasSelection && !loading ? { scale: 0.97 } : undefined}
             onClick={onAnalyzeSelected}
-            disabled={loading || !hasSelection}
+            disabled={loading}
             title={hasSelection ? "Analyze just the highlighted code" : "Highlight some code first"}
-            className={`${baseBtn} bg-gradient-to-br from-ai/80 to-ai text-ai-foreground shadow-[0_0_20px_color-mix(in_oklab,var(--ai)_40%,transparent)] hover:shadow-[0_0_32px_color-mix(in_oklab,var(--ai)_70%,transparent)]`}
+            className={`${baseBtn} bg-gradient-to-br from-ai/80 to-ai text-ai-foreground shadow-[0_0_20px_color-mix(in_oklab,var(--ai)_40%,transparent)] hover:shadow-[0_0_32px_color-mix(in_oklab,var(--ai)_70%,transparent)] ${
+              !hasSelection ? "opacity-40 cursor-not-allowed hover:shadow-none" : ""
+            }`}
           >
             <Scissors className="h-4 w-4" />
             Analyze Selected
-            <Tooltip>Only analyze the text you've highlighted</Tooltip>
+            <Tooltip>
+              {hasSelection ? "Only analyze the text you've highlighted" : "Select code in the editor first"}
+            </Tooltip>
           </motion.button>
 
           {/* Clear */}
