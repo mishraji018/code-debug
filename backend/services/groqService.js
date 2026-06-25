@@ -55,6 +55,16 @@ OUTPUT FORMAT (STRICT JSON — return ONLY this, no extra text, no backticks):
     "improvement suggestion 2"
   ],
 
+  "codeExplanation": {
+    "summary": "Brief summary of what the code does",
+    "breakdown": [
+      { "line": "code line or block", "explains": "what it does" }
+    ],
+    "tip": "A pro tip for best practice"
+  },
+
+  "executionOutput": "If code has no errors, provide the exact expected console output of this code when executed. If it has errors, leave empty.",
+
   "lineExplanation": [
     "Line 1: what this line does",
     "Line 2: what this line does"
@@ -210,6 +220,8 @@ export async function analyzeWithGroq({ code, language, lineOffset, mode = 'debu
       diff: parsed.diff || [],
       improvements: parsed.improvements || [],
       lineExplanation: parsed.lineExplanation || [],
+      codeExplanation: parsed.codeExplanation || null,
+      executionOutput: parsed.executionOutput || '',
       suggestions: parsed.suggestions || [],
       modeOutput: parsed.modeOutput || null,
     },

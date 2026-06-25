@@ -1,21 +1,28 @@
-import { Terminal, Plus, ChevronDown } from "lucide-react";
+import { Terminal, Plus, ChevronDown, FolderOpen, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { languages } from "@/lib/mockAnalysis";
+import { Note } from "@/utils/notes.store";
 
 interface TopNavbarProps {
   language: string;
   onLanguageChange: (lang: string) => void;
   onNewFile: () => void;
+  notes: Note[];
+  onLoadNote: (note: Note) => void;
+  onDeleteNote: (id: string) => void;
 }
 
-export function TopNavbar({ language, onLanguageChange, onNewFile }: TopNavbarProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+export function TopNavbar({ language, onLanguageChange, onNewFile, notes, onLoadNote, onDeleteNote }: TopNavbarProps) {
+  const [openLang, setOpenLang] = useState(false);
+  const [openNotes, setOpenNotes] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const notesRef = useRef<HTMLDivElement>(null);
   const current = languages.find((l) => l.id === language) ?? languages[0];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setOpenLang(false);
+      if (notesRef.current && !notesRef.current.contains(e.target as Node)) setOpenNotes(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -47,26 +54,29 @@ export function TopNavbar({ language, onLanguageChange, onNewFile }: TopNavbarPr
       </div>
 
       {/* Language selector */}
-      <div ref={ref} className="relative">
+      <div ref={langRef} className="relative">
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            setOpenLang((o) => !o);
+            setOpenNotes(false);
+          }}
           className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_color-mix(in_oklab,var(--primary)_30%,transparent)]"
           aria-label="Select language"
         >
           <span className="text-base">{current.emoji}</span>
           <span>{current.label}</span>
           <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-muted-foreground transition-transform ${openLang ? "rotate-180" : ""}`}
           />
         </button>
-        {open && (
+        {openLang && (
           <div className="glass-strong absolute left-1/2 top-full mt-2 w-48 -translate-x-1/2 overflow-hidden rounded-xl shadow-2xl">
             {languages.map((l) => (
               <button
                 key={l.id}
                 onClick={() => {
                   onLanguageChange(l.id);
-                  setOpen(false);
+                  setOpenLang(false);
                 }}
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5 ${
                   l.id === language ? "bg-primary/15 text-primary" : ""
@@ -82,6 +92,58 @@ export function TopNavbar({ language, onLanguageChange, onNewFile }: TopNavbarPr
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Saved Notes Dropdown */}
+        <div ref={notesRef} className="relative hidden sm:block">
+          <button
+            onClick={() => {
+              setOpenNotes((o) => !o);
+              setOpenLang(false);
+            }}
+            className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 hover:border-primary/50"
+            aria-label="Saved notes"
+          >
+            <FolderOpen className="h-4 w-4" />
+            <span>My Notes</span>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform ${openNotes ? "rotate-180" : ""}`}
+            />
+          </button>
+          {openNotes && (
+            <div className="glass-strong absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-xl shadow-2xl max-h-80 overflow-y-auto scrollbar-thin">
+              {notes.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  No saved notes yet.
+                </div>
+              ) : (
+                notes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="group flex w-full items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5 cursor-pointer"
+                    onClick={() => {
+                      onLoadNote(note);
+                      setOpenNotes(false);
+                    }}
+                  >
+                    <div className="flex flex-col items-start overflow-hidden">
+                      <span className="truncate w-full text-left font-medium">{note.title}</span>
+                      <span className="text-xs text-muted-foreground">{languages.find(l => l.id === note.language)?.label || 'Code'}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteNote(note.id);
+                      }}
+                      className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive p-1"
+                      title="Delete Note"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <button
           onClick={onNewFile}
           className="glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all hover:border-primary/50 hover:bg-white/8"

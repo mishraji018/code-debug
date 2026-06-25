@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import analyzeRouter from './routes/analyze.js';
+import chatRouter from './routes/chat.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/api', limiter);
 
 // ── Routes ────────────────────────────────────────────────────
 app.use('/api', analyzeRouter);
+app.use('/api', chatRouter);
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/', (_, res) => res.json({ status: 'OK', service: 'AI Code Debugger API' }));

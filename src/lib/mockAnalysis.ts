@@ -39,6 +39,7 @@ export type AnalysisResult = {
   lineExplanation?: string[];
   suggestions?: { type: string; message: string }[];
   modeOutput?: { summary: string; detail: string } | null;
+  executionOutput?: string;
 };
 
 export const defaultCode: Record<string, string> = {

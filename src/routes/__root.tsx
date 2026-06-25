@@ -66,9 +66,30 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <>
-      <Outlet />
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <header className="flex h-14 items-center justify-between border-b border-white/5 bg-black/20 px-6 shrink-0">
+        <div className="flex items-center gap-2 font-bold tracking-wide text-foreground">
+          <span className="text-primary">Debug</span>AI
+        </div>
+        <nav className="flex items-center gap-6 text-sm font-medium">
+          <Link
+            to="/"
+            className="text-foreground/70 transition-colors hover:text-foreground [&.active]:text-primary"
+          >
+            Debugger
+          </Link>
+          <Link
+            to="/notes"
+            className="text-foreground/70 transition-colors hover:text-foreground [&.active]:text-primary"
+          >
+            Notes
+          </Link>
+        </nav>
+      </header>
+      <main className="flex-1 overflow-hidden">
+        <Outlet />
+      </main>
       <Toaster theme="dark" position="top-center" richColors />
-    </>
+    </div>
   );
 }

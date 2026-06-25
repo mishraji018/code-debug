@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 import { TopNavbar } from "@/components/debugger/TopNavbar";
@@ -8,6 +8,7 @@ import { AIOutputPanel } from "@/components/debugger/AIOutputPanel";
 import { Code2, Bot } from "lucide-react";
 import { defaultCode, type AnalysisResult } from "@/lib/mockAnalysis";
 import { analyzeCode } from "@/utils/analyze.functions";
+import { notesStore, type Note } from "@/utils/notes.store";
 
 export function DebuggerApp() {
   const [language, setLanguage] = useState<string>("python");
@@ -17,6 +18,26 @@ export function DebuggerApp() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [mobileTab, setMobileTab] = useState<"editor" | "results">("editor");
+
+  // Notes state
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+
+  // Load initial notes
+  useEffect(() => {
+    setNotes(notesStore.getNotes());
+  }, []);
+
+  // Auto-save code changes to active note
+  useEffect(() => {
+    if (activeNoteId) {
+      const timeout = setTimeout(() => {
+        notesStore.updateNote(activeNoteId, { content: code, language });
+        setNotes(notesStore.getNotes());
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [code, language, activeNoteId]);
 
   // Ref to CodeEditor for scrollToLine
   const editorRef = useRef<CodeEditorHandle>(null);
@@ -124,8 +145,33 @@ export function DebuggerApp() {
   };
 
   const handleNewFile = () => {
-    setCode(defaultCode[language] ?? "");
+    const title = window.prompt("Enter a title to save this code snippet as a Note:");
+    if (title && title.trim()) {
+      // Create new note with CURRENT code and language
+      const newNote = notesStore.createNote(title.trim(), language, code);
+      setNotes(notesStore.getNotes());
+      setActiveNoteId(newNote.id);
+      toast.success("Note saved successfully!");
+    }
+  };
+
+  const handleLoadNote = (note: Note) => {
+    setCode(note.content);
+    setLanguage(note.language);
+    setActiveNoteId(note.id);
     setResult(null);
+    toast.success(`Loaded "${note.title}"`);
+  };
+
+  const handleDeleteNote = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this note?")) {
+      notesStore.deleteNote(id);
+      setNotes(notesStore.getNotes());
+      if (activeNoteId === id) {
+        setActiveNoteId(null);
+      }
+      toast.success("Note deleted");
+    }
   };
 
   // Apply Fix: replace editor content with correctedCode from AI
@@ -147,6 +193,9 @@ export function DebuggerApp() {
         language={language}
         onLanguageChange={handleLangChange}
         onNewFile={handleNewFile}
+        notes={notes}
+        onLoadNote={handleLoadNote}
+        onDeleteNote={handleDeleteNote}
       />
 
       {/* Mobile tabs — only visible below md */}
@@ -212,6 +261,7 @@ export function DebuggerApp() {
               result={result}
               onScrollToLine={scrollToLine}
               onApplyFix={handleApplyFix}
+              codeContext={code}
             />
           </div>
         </section>

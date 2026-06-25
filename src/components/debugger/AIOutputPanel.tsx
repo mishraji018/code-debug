@@ -18,44 +18,172 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { AnalysisResult, ErrorItem } from "@/lib/mockAnalysis";
+import { chatWithAI } from "@/utils/chat.functions";
+
+interface Message {
+  id: string;
+  role: "user" | "ai";
+  content: string;
+}
 
 interface AIOutputPanelProps {
   loading: boolean;
   result: AnalysisResult | null;
   onScrollToLine: (line: number) => void;
   onApplyFix: (correctedCode: string) => void;
+  codeContext: string; // The current code to send to AI
 }
 
-export function AIOutputPanel({ loading, result, onScrollToLine, onApplyFix }: AIOutputPanelProps) {
+export function AIOutputPanel({ loading, result, onScrollToLine, onApplyFix, codeContext }: AIOutputPanelProps) {
+  const [view, setView] = useState<"analysis" | "chat">("analysis");
+
   return (
     <div className="glass-strong relative flex h-full flex-col overflow-hidden rounded-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-md bg-ai/40 blur-md" />
-            <Bot className="relative h-4 w-4 text-ai" />
+      <div className="flex items-center justify-between border-b border-white/5 px-4 py-3 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-md bg-ai/40 blur-md" />
+              <Bot className="relative h-4 w-4 text-ai" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-wide">AI Assistant</h2>
           </div>
-          <h2 className="text-sm font-semibold tracking-wide">AI Output</h2>
+          <div className="flex bg-black/40 rounded-full p-1 border border-white/10">
+            <button
+              onClick={() => setView("analysis")}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                view === "analysis" ? "bg-ai/20 text-ai" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Analysis
+            </button>
+            <button
+              onClick={() => setView("chat")}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                view === "chat" ? "bg-ai/20 text-ai" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Chat
+            </button>
+          </div>
         </div>
-        <span className="rounded-full bg-ai/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ai">
-          {loading ? "Analyzing" : result ? "Complete" : "Idle"}
+        <span className="rounded-full bg-ai/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ai hidden sm:block">
+          {loading && view === "analysis" ? "Analyzing" : result && view === "analysis" ? "Complete" : "Ready"}
         </span>
       </div>
 
       {/* Scrollable content */}
-      <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <SkeletonState key="loading" />
-          ) : result ? (
-            <ResultsState key="results" result={result} onScrollToLine={onScrollToLine} onApplyFix={onApplyFix} />
-          ) : (
-            <EmptyState key="empty" />
-          )}
-        </AnimatePresence>
+      <div className="scrollbar-thin flex-1 overflow-y-auto p-4 flex flex-col">
+        {view === "analysis" ? (
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <SkeletonState key="loading" />
+            ) : result ? (
+              <ResultsState key="results" result={result} onScrollToLine={onScrollToLine} onApplyFix={onApplyFix} />
+            ) : (
+              <EmptyState key="empty" />
+            )}
+          </AnimatePresence>
+        ) : (
+          <ChatView codeContext={codeContext} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Chat View ───────────────────────────────────────────────
+function ChatView({ codeContext }: { codeContext: string }) {
+  const [messages, setMessages] = useState<Message[]>([
+    { id: "1", role: "ai", content: "Hi! Ask me anything about your current code snippet." }
+  ]);
+  const [input, setInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isChatting) return;
+
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: input.trim() };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsChatting(true);
+
+    const res = await chatWithAI({ prompt: userMsg.content, context: codeContext });
+    
+    if (res.ok && res.result) {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: "ai", content: res.result.answer }
+      ]);
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: "ai", content: "Sorry, I couldn't process that. Error: " + res.error }
+      ]);
+    }
+    setIsChatting(false);
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 space-y-4 overflow-y-auto pb-4 scrollbar-thin">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${msg.role === "user" ? "bg-primary/20 text-primary" : "bg-ai/20 text-ai"}`}>
+              {msg.role === "user" ? <span className="text-xs font-bold">U</span> : <Bot className="h-4 w-4" />}
+            </div>
+            <div className={`rounded-xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === "user" ? "bg-primary/10 text-foreground" : "bg-white/5 text-foreground/90"} max-w-[85%] whitespace-pre-wrap`}>
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {isChatting && (
+          <div className="flex gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ai/20 text-ai">
+              <Bot className="h-4 w-4" />
+            </div>
+            <div className="flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-ai animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-ai animate-pulse delay-75" />
+              <span className="h-1.5 w-1.5 rounded-full bg-ai animate-pulse delay-150" />
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="mt-auto shrink-0 pt-2 border-t border-white/5">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="relative flex items-center"
+        >
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about your code..."
+            className="w-full rounded-full border border-white/10 bg-black/40 py-3 pl-5 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:border-ai/50 focus:outline-none focus:ring-1 focus:ring-ai/50 transition-all"
+            disabled={isChatting}
+          />
+          <button
+            type="submit"
+            disabled={isChatting || !input.trim()}
+            className="absolute right-2 rounded-full p-2 text-muted-foreground hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:hover:bg-transparent"
+          >
+            <Zap className="h-4 w-4" />
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -158,6 +286,10 @@ function ResultsState({
           <CodeBreakdownCard key="brk" result={result} />,
           <ProTipCard key="tip" result={result} />,
         ] : []),
+        // Output
+        result.executionOutput
+          ? <OutputCard key="out" result={result} />
+          : null,
         // Improvements
         result.improvements && result.improvements.length > 0
           ? <ImprovementsCard key="imp" improvements={result.improvements} />
@@ -545,6 +677,22 @@ function ProTipCard({ result }: { result: AnalysisResult }) {
         <h3 className="font-semibold text-warning">AI Suggestion</h3>
       </div>
       <p className="text-sm leading-relaxed text-foreground/90">{result.codeExplanation.tip}</p>
+    </div>
+  );
+}
+
+// ── 🖥️ Output card ───────────────────────────────────────────
+function OutputCard({ result }: { result: AnalysisResult }) {
+  if (!result.executionOutput) return null;
+  return (
+    <div className="glass-tint-success rounded-xl p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <Play className="h-4 w-4 text-success" />
+        <h3 className="font-semibold text-success">Expected Output</h3>
+      </div>
+      <pre className="mt-3 overflow-x-auto rounded-lg border border-success/20 bg-black/40 p-3 font-mono text-xs text-foreground/90 scrollbar-thin">
+        <code>{result.executionOutput}</code>
+      </pre>
     </div>
   );
 }
