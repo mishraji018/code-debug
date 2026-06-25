@@ -10,6 +10,8 @@
 - **Multi-Error Detection:** Identifies ALL errors in your code simultaneously, categorizing them by line number, type, and severity.
 - **Interactive Editor Sync:** Click on any error in the output panel and the built-in IDE (Monaco Editor) will instantly scroll and highlight the exact line of code.
 - **Diff View & Auto-Fix:** Provides GitHub-style Red/Green code diffs. Click "Apply Fix" to automatically inject the corrected code directly into your editor!
+- **Integrated AI Chat:** Ask follow-up questions directly to the AI about your code in a dedicated chat interface, fully context-aware of your current snippet.
+- **Save Notes & Snippets:** Easily save your code snippets directly from the editor, optionally assigning them a title, and load them back anytime via the "My Notes" dropdown.
 - **Blazing Fast AI:** Powered by a customized Node.js backend integrating the Groq LLM API, bypassing standard rate limits with built-in retry mechanisms.
 - **Premium UI/UX:** Features a state-of-the-art 2-column responsive CSS Grid layout, glassmorphism overlays, and smooth CSS animations (built with Tailwind CSS and Framer Motion).
 
