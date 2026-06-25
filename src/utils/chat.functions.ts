@@ -1,5 +1,7 @@
-// Note: using localhost or render URL based on env if available, else localhost:3001
-const API_URL = 'http://localhost:3001/api/chat';
+// Use local backend during dev, and Render backend in production
+const API_URL = import.meta.env.DEV 
+  ? 'http://localhost:3001/api/chat' 
+  : 'https://code-debug-fdpr.onrender.com/api/chat';
 
 export async function chatWithAI({ prompt, context }: { prompt: string; context?: string }) {
   try {
